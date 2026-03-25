@@ -24,7 +24,7 @@ const BORDER = {
   active: { color: "#b0a890", w: 1.5 },
   resolved: { color: "#504838", w: 1 },
   missed: { color: "#b89a3e", w: 1 },
-  future: { color: "#3a3528", w: 1 },
+  future: { color: "#3a3528", w: 3 },
 };
 
 // Preload icon images
@@ -53,6 +53,10 @@ export default function MindMap() {
   const [zoom, setZoom] = useState(1);
   const [curAct, setCurAct] = useState(1);
   const [knownActs, setKnownActs] = useState<number[]>([1]);
+  const [actNames, setActNames] = useState<Record<number, string>>({});
+  const [selAct, setSelAct] = useState<number | null>(1);
+  const [editActName, setEditActName] = useState<number | null>(null);
+  const [confirmDlg, setConfirmDlg] = useState<{ msg: string; onOk: () => void } | null>(null);
   const [editLabel, setEditLabel] = useState<string | null>(null);
   const [iconPick, setIconPick] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -65,7 +69,21 @@ export default function MindMap() {
         const data = JSON.parse(saved);
         if (data.nodes) setNodes(data.nodes);
         if (data.curAct) setCurAct(data.curAct);
-        if (data.knownActs) setKnownActs(data.knownActs);
+        // Migrate: derive knownActs from nodes if not saved
+        if (data.knownActs) {
+          setKnownActs(data.knownActs);
+        } else if (data.nodes) {
+          setKnownActs([1, ...(data.nodes as MindNode[]).map((n) => n.act)]);
+        }
+        if (data.actNames) setActNames(data.actNames);
+      } else {
+        // Fresh start: create a default thought for Act 1
+        setNodes([{
+          id: crypto.randomUUID(),
+          x: window.innerWidth / 2, y: window.innerHeight / 2,
+          label: "New Thought", icon: "brain", connections: [],
+          size: "large", state: "active", seen: false, act: 1,
+        }]);
       }
     } catch {
       /* ignore */
@@ -75,11 +93,44 @@ export default function MindMap() {
   // Save to localStorage on changes
   useEffect(() => {
     try {
-      localStorage.setItem("pathomap", JSON.stringify({ nodes, curAct, knownActs }));
+      localStorage.setItem("pathomap", JSON.stringify({ nodes, curAct, knownActs, actNames }));
     } catch {
       /* ignore */
     }
   }, [nodes, curAct]);
+
+  // Bell sounds
+  const playSkyBell = useCallback(() => {
+    const audio = new Audio("/sky_bell_final.mp3");
+    audio.play().catch(() => {});
+    audio.addEventListener("loadedmetadata", () => {
+      const secondDong = audio.duration * 0.55;
+      setTimeout(() => {
+        const audio2 = new Audio("/sky_bell_final.mp3");
+        audio2.play().catch(() => {});
+      }, secondDong * 1000);
+    });
+  }, []);
+
+  const playSoborBell = useCallback(() => {
+    const audio = new Audio("/Sobor_Bell_Short.mp3");
+    audio.play().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    let lastHour = -1;
+    const check = () => {
+      const now = new Date();
+      const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+      if (m === 0 && s === 0 && h !== lastHour) {
+        lastHour = h;
+        if (h === 0) playSoborBell();
+        else playSkyBell();
+      }
+    };
+    const iv = setInterval(check, 1000);
+    return () => clearInterval(iv);
+  }, [playSkyBell, playSoborBell]);
 
   // Force redraws as images load
   useEffect(() => {
@@ -90,7 +141,7 @@ export default function MindMap() {
   // Prune empty acts that aren't current
   useEffect(() => {
     const usedActs = new Set(nodes.map((n) => n.act));
-    setKnownActs((k) => k.filter((a) => usedActs.has(a) || a === curAct));
+    setKnownActs((k) => k.filter((a) => a === 1 || usedActs.has(a) || a === curAct));
   }, [curAct, nodes]);
 
   const acts = [...new Set([...nodes.map((n) => n.act), ...knownActs])].sort((a, b) => a - b);
@@ -204,7 +255,7 @@ export default function MindMap() {
         ctx.save();
         ctx.strokeStyle = "#706858";
         ctx.globalAlpha = 0.4;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(sx, sy);
         ctx.lineTo(t.x + pan.x, t.y + pan.y);
@@ -287,13 +338,23 @@ export default function MindMap() {
 
       // Border (only for future nodes — others have borders in their icon images)
       if (nd.state === "future") {
-        ctx.beginPath();
-        ctx.arc(nx, ny, r, 0, Math.PI * 2);
-        ctx.strokeStyle = isHov || isSel ? "#b8b4a8" : b.color;
+        ctx.strokeStyle = isHov || isSel ? "#d4d4d4" : b.color;
         ctx.lineWidth = b.w;
+        ctx.beginPath();
+        ctx.arc(nx, ny, r - b.w / 2, 0, Math.PI * 2);
         const circ = Math.PI * 2 * r;
-        const seg = circ / 7.5;
-        ctx.setLineDash([seg * 0.55, seg * 0.45]);
+        const baseDash = circ / 8;
+        // Seeded random for slight gap variation per node
+        let seed = 0;
+        for (let i = 0; i < nd.id.length; i++) seed = (seed * 31 + nd.id.charCodeAt(i)) | 0;
+        const dashes: number[] = [];
+        for (let i = 0; i < 8; i++) {
+          seed = (seed * 1103515245 + 12345) | 0;
+          const gapVar = ((seed >>> 16) % 4) - 1.5; // -1.5 to +1.5
+          const gap = baseDash * 0.3 + gapVar;
+          dashes.push(baseDash * 0.7 - gapVar, gap);
+        }
+        ctx.setLineDash(dashes);
         ctx.stroke();
         ctx.setLineDash([]);
       }
@@ -338,7 +399,7 @@ export default function MindMap() {
     ctx.textAlign = "left";
     const baseY = 48;
     ctx.font = "bold 34px 'Liberation Serif', Georgia, serif";
-    ctx.fillStyle = "#b8b4a8";
+    ctx.fillStyle = "#d4d4d4";
     const prefix = `${hh}:${mm} — `;
     ctx.fillText(prefix, 60, baseY);
     let dx = 60 + ctx.measureText(prefix).width;
@@ -360,7 +421,7 @@ export default function MindMap() {
     tabs.forEach((t, i) => {
       const isThoughts = t === "THOUGHTS";
       ctx.font = "condensed 22px 'Noto Sans', sans-serif";
-      ctx.fillStyle = isThoughts ? "#b8b4a8" : "#5a5040";
+      ctx.fillStyle = isThoughts ? "#d4d4d4" : "#5a5040";
       ctx.fillText(t, tabX[i], 44);
     });
     ctx.font = "condensed 28px 'Noto Sans', sans-serif";
@@ -388,7 +449,7 @@ export default function MindMap() {
     if (!c) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      setZoom((z) => Math.min(1.5, Math.max(0.75, z - e.deltaY * 0.001)));
+      setZoom((z) => Math.min(1.75, Math.max(0.75, z - e.deltaY * 0.001)));
     };
     c.addEventListener("wheel", onWheel, { passive: false });
     return () => c.removeEventListener("wheel", onWheel);
@@ -397,13 +458,6 @@ export default function MindMap() {
   /* ── Mouse ── */
   const onDown = useCallback(
     (e: React.MouseEvent) => {
-      // PEOPLE tab click → redirect
-      const vw = window.innerWidth;
-      const peopleX = vw - 110;
-      if (e.clientY < 68 && Math.abs(e.clientX - peopleX) < 50) {
-        window.open("https://dantonmariano.com", "_blank");
-        return;
-      }
       const hit = hitNode(e.clientX, e.clientY);
       const cp = toC(e.clientX, e.clientY);
       if (e.button === 2) {
@@ -442,6 +496,7 @@ export default function MindMap() {
       }
       if (hit) {
         setSelId(hit.id);
+        setSelAct(null);
         setDragging(hit.id);
         setDragOff({ x: cp.x - hit.x - pan.x, y: cp.y - hit.y - pan.y });
         setIconPick(null);
@@ -458,11 +513,6 @@ export default function MindMap() {
     (e: React.MouseEvent) => {
       setMouse({ x: e.clientX, y: e.clientY });
       setHovId(hitNode(e.clientX, e.clientY)?.id ?? null);
-      // Cursor for PEOPLE tab
-      const vw = window.innerWidth;
-      const onPeople = e.clientY < 68 && Math.abs(e.clientX - (vw - 110)) < 50;
-      const c = canvasRef.current;
-      if (c) c.style.cursor = onPeople ? "pointer" : "default";
       if (panning) {
         const cp = toC(e.clientX, e.clientY);
         setPan({ x: cp.x - panSt.x, y: cp.y - panSt.y });
@@ -495,6 +545,7 @@ export default function MindMap() {
       const hit = hitNode(e.clientX, e.clientY);
       if (hit) {
         setSelId(hit.id);
+        setSelAct(null);
         setEditLabel(hit.id);
         return;
       }
@@ -573,7 +624,7 @@ export default function MindMap() {
   }, [pan, zoom]);
 
   // Which node to show the tooltip for (editing takes priority over hover)
-  const tooltipNode = editLabel ? vis.find((n) => n.id === editLabel) : (!dragging && hovId ? vis.find((n) => n.id === hovId) : null);
+  const tooltipNode = editLabel ? vis.find((n) => n.id === editLabel) : (!dragging && hovId ? vis.find((n) => n.id === hovId && n.state !== "future") : null);
 
   return (
     <div
@@ -596,44 +647,25 @@ export default function MindMap() {
       >
         {acts.map((a) => {
           const has = nodes.some((n) => n.act === a);
+          const name = actNames[a] || `Act ${toRoman(a)}`;
           return (
-            <div key={a} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button
-                onClick={() => setCurAct(a)}
-                style={{
-                  textAlign: "left",
-                  fontSize: 32,
-                  fontFamily: "'Noto Sans', sans-serif",
-                  fontStretch: "condensed",
-                  color: curAct === a ? "#b8b4a8" : "#5a5040",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "2px 0",
-                }}
-              >
-                {!has && "* "}
-                {`Act ${toRoman(a)}`}
-              </button>
-              {curAct === a && (
-                <button
-                  onClick={() => {
-                    const nodeCount = nodes.filter((n) => n.act === a).length;
-                    const msg = nodeCount > 0
-                      ? `Delete Act ${toRoman(a)}? All ${nodeCount} node${nodeCount > 1 ? "s" : ""} will be lost.`
-                      : `Delete Act ${toRoman(a)}?`;
-                    if (!confirm(msg)) return;
-                    setNodes((p) => p.filter((n) => n.act !== a));
-                    setKnownActs((k) => k.filter((k2) => k2 !== a));
-                    const remaining = acts.filter((x) => x !== a);
-                    setCurAct(remaining.length ? remaining[remaining.length - 1] : 1);
-                  }}
-                  style={{ fontSize: 11, color: "#a83232", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em" }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+            <button
+              key={a}
+              onClick={() => { setCurAct(a); setSelAct(a); setSelId(null); setEditLabel(null); setIconPick(null); }}
+              style={{
+                textAlign: "left",
+                fontSize: 32,
+                fontFamily: "'Noto Sans', sans-serif",
+                fontStretch: "condensed",
+                color: curAct === a ? "#d4d4d4" : "#5a5040",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "2px 0",
+              }}
+            >
+              {!has && "* "}{name}
+            </button>
           );
         })}
         <button
@@ -642,6 +674,8 @@ export default function MindMap() {
             while (acts.includes(next)) next++;
             setKnownActs((k) => [...new Set([...k, next])]);
             setCurAct(next);
+            setSelAct(next);
+            setSelId(null);
           }}
           style={{
             textAlign: "left",
@@ -670,7 +704,7 @@ export default function MindMap() {
               transform: `translateX(-50%) scale(${zoom})`,
               transformOrigin: "top center",
               background: "#060504",
-              border: `${1 / zoom}px solid rgba(190,180,160,0.6)`,
+              border: `${1 / zoom}px solid rgba(212,212,212,0.5)`,
               padding: "12px 18px",
               maxWidth: 400,
               minWidth: 120,
@@ -697,7 +731,7 @@ export default function MindMap() {
                   }}
                   style={{
                     background: "transparent", border: "none", outline: "none",
-                    color: "#b8b4a8", fontSize: 16, fontFamily: "'Noto Sans', sans-serif",
+                    color: "#d4d4d4", fontSize: 16, fontFamily: "'Noto Sans', sans-serif",
                     fontStretch: "condensed", caretColor: "#a83232",
                     width: "100%", minHeight: 60, resize: "vertical", lineHeight: 1.5,
                     textAlign: "left",
@@ -712,7 +746,7 @@ export default function MindMap() {
                       setNodes((p) => p.map((n) => n.id === tooltipNode.id ? { ...n, label: val } : n));
                       setEditLabel(null);
                     }}
-                    style={{ fontSize: 11, color: "#b8b4a8", background: "none", border: "1px solid #3a3528", cursor: "pointer", padding: "2px 10px", letterSpacing: "0.05em" }}
+                    style={{ fontSize: 11, color: "#d4d4d4", background: "none", border: "1px solid #3a3528", cursor: "pointer", padding: "2px 10px", letterSpacing: "0.05em" }}
                   >SAVE</button>
                   <button
                     onMouseDown={() => setEditLabel(null)}
@@ -731,7 +765,6 @@ export default function MindMap() {
         );
       })()}
 
-      {/* Bottom left: selected info */}
       <div className="absolute z-20" style={{ left: 60, bottom: 36 }}>
         {sel ? (
           <div>
@@ -807,6 +840,62 @@ export default function MindMap() {
               </button>
             </div>
           </div>
+        ) : selAct !== null ? (
+          <div>
+            {editActName === selAct ? (
+              <input
+                autoFocus
+                defaultValue={actNames[selAct] || `Act ${toRoman(selAct)}`}
+                onBlur={(e) => {
+                  const val = e.target.value.trim();
+                  if (val && val !== `Act ${toRoman(selAct)}`) {
+                    setActNames((p) => ({ ...p, [selAct]: val }));
+                  } else {
+                    setActNames((p) => { const c = { ...p }; delete c[selAct]; return c; });
+                  }
+                  setEditActName(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  if (e.key === "Escape") setEditActName(null);
+                }}
+                style={{
+                  background: "transparent", border: "none", outline: "none",
+                  color: "#d4d4d4", fontSize: 18, fontFamily: "'Noto Sans', sans-serif",
+                  fontStretch: "condensed", caretColor: "#a83232", width: 300,
+                }}
+              />
+            ) : (
+              <div style={{ fontSize: 18, color: "#d4d4d4", marginBottom: 8 }}>
+                {actNames[selAct] || `Act ${toRoman(selAct)}`}
+              </div>
+            )}
+            <div className="flex" style={{ gap: 14, fontSize: 11, letterSpacing: "0.08em" }}>
+              <button
+                onClick={() => setEditActName(selAct)}
+                style={{ color: "#6a6050", background: "none", border: "none", cursor: "pointer" }}
+              >RENAME</button>
+              <button
+                onClick={() => {
+                  const name = actNames[selAct] || `Act ${toRoman(selAct)}`;
+                  const hasThoughts = nodes.some((n) => n.act === selAct);
+                  const doDelete = () => {
+                    setNodes((p) => p.filter((n) => n.act !== selAct));
+                    setKnownActs((k) => k.filter((k2) => k2 !== selAct));
+                    setActNames((p) => { const c = { ...p }; delete c[selAct]; return c; });
+                    const remaining = acts.filter((x) => x !== selAct);
+                    const next = remaining.length ? remaining[remaining.length - 1] : 1;
+                    setCurAct(next);
+                    setSelAct(next);
+                    setConfirmDlg(null);
+                  };
+                  if (!hasThoughts) { doDelete(); return; }
+                  setConfirmDlg({ msg: `Delete ${name}? All thoughts will be lost.`, onOk: doDelete });
+                }}
+                style={{ color: "#a83232", background: "none", border: "none", cursor: "pointer" }}
+              >DELETE</button>
+            </div>
+          </div>
         ) : (
           <div style={{ fontSize: 15, fontStyle: "italic", color: "#3a3528" }}>
             Double-click to create a thought
@@ -858,7 +947,7 @@ export default function MindMap() {
                   width: 52,
                   height: 52,
                   background: sel.icon === name ? "#2a2520" : "#0e0c0a",
-                  border: `1px solid ${sel.icon === name ? "#b8b4a8" : "#2a2520"}`,
+                  border: `1px solid ${sel.icon === name ? "#d4d4d4" : "#2a2520"}`,
                   borderRadius: "50%",
                   cursor: "pointer",
                   padding: 4,
@@ -900,6 +989,24 @@ export default function MindMap() {
           }}
         >
           Right-click target to connect · Right-click empty to cancel · Right-click on line to delete
+        </div>
+      )}
+      {/* Custom confirm dialog */}
+      {confirmDlg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(6,5,4,0.85)" }}>
+          <div style={{ background: "#0e0c0a", border: "1px solid rgba(212,212,212,0.5)", padding: "24px 32px", maxWidth: 360, textAlign: "center" }}>
+            <div style={{ color: "#d4d4d4", fontSize: 16, marginBottom: 20, lineHeight: 1.5 }}>{confirmDlg.msg}</div>
+            <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
+              <button
+                onClick={confirmDlg.onOk}
+                style={{ fontSize: 12, color: "#d4d4d4", background: "none", border: "1px solid #3a3528", cursor: "pointer", padding: "4px 20px", letterSpacing: "0.05em" }}
+              >CONFIRM</button>
+              <button
+                onClick={() => setConfirmDlg(null)}
+                style={{ fontSize: 12, color: "#5a5040", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em" }}
+              >CANCEL</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

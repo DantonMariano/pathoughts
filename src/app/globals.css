@@ -6,9 +6,14 @@ body {
   background: #060504;
   font-family: 'Noto Sans', Arial, sans-serif;
   font-stretch: condensed;
-  color: #b8b4a8;
+  color: #d4d4d4;
   user-select: none;
   cursor: default;
+}
+
+button, input, textarea {
+  font-family: 'Noto Sans', Arial, sans-serif;
+  font-stretch: condensed;
 }
 
 /* Themed scrollbar */
@@ -19,11 +24,11 @@ body {
 .themed-scroll { scrollbar-width: thin; scrollbar-color: #3a3528 #0e0c0a; }
 
 /* Markdown rendered in thoughts */
-.thought-md { font-size: 18px; font-style: italic; color: #b8b4a8; cursor: text; line-height: 1.5; overflow-wrap: break-word; word-break: break-word; }
+.thought-md { font-size: 18px; font-style: italic; color: #d4d4d4; cursor: text; line-height: 1.5; overflow-wrap: break-word; word-break: break-word; }
 .thought-md p { margin: 0.25em 0; }
-.thought-md strong { color: #d0cdc4; font-weight: 700; }
-.thought-md em { color: #b89a3e; }
+.thought-md strong { color: #e8e8e8; font-weight: 700; }
+.thought-md em { color: #e0e0e0; }
 .thought-md ul, .thought-md ol { padding-left: 1.2em; margin: 0.25em 0; }
 .thought-md code { background: #1a1816; padding: 1px 4px; font-size: 0.9em; color: #a09080; }
 .thought-md a { color: #a83232; text-decoration: underline; }
-.thought-md h1, .thought-md h2, .thought-md h3 { color: #d0cdc4; margin: 0.3em 0 0.1em; font-size: 1em; }
+.thought-md h1, .thought-md h2, .thought-md h3 { color: #e8e8e8; margin: 0.3em 0 0.1em; font-size: 1em; }

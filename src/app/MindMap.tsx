@@ -38,6 +38,9 @@ function getImg(name: string): HTMLImageElement | null {
   return img.complete ? img : null;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const gtag = (...args: any[]) => { if (typeof window !== "undefined" && (window as any).gtag) (window as any).gtag(...args); };
+
 export default function MindMap() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [nodes, setNodes] = useState<MindNode[]>([]);
@@ -342,19 +345,27 @@ export default function MindMap() {
         ctx.lineWidth = b.w;
         ctx.beginPath();
         ctx.arc(nx, ny, r - b.w / 2, 0, Math.PI * 2);
-        const circ = Math.PI * 2 * r;
-        const baseDash = circ / 8;
-        // Seeded random for slight gap variation per node
+        const circ = Math.PI * 2 * (r - b.w / 2);
+        const seg = circ / 8;
+        const minGap = 10;
+        // Seed from node id
         let seed = 0;
-        for (let i = 0; i < nd.id.length; i++) seed = (seed * 31 + nd.id.charCodeAt(i)) | 0;
+        for (let i = 0; i < nd.id.length; i++) seed = ((seed << 5) - seed + nd.id.charCodeAt(i)) | 0;
+        // Random rotation
+        const rot = (Math.abs(seed) % 360) * (Math.PI / 180);
+        ctx.translate(nx, ny);
+        ctx.rotate(rot);
+        ctx.translate(-nx, -ny);
+        // Build dash pattern
         const dashes: number[] = [];
         for (let i = 0; i < 8; i++) {
           seed = (seed * 1103515245 + 12345) | 0;
-          const gapVar = ((seed >>> 16) % 4) - 1.5; // -1.5 to +1.5
-          const gap = baseDash * 0.3 + gapVar;
-          dashes.push(baseDash * 0.7 - gapVar, gap);
+          const gapExtra = ((seed >>> 16) % 5); // 0–4 extra px
+          const gap = minGap + gapExtra;
+          dashes.push(seg - gap, gap);
         }
         ctx.setLineDash(dashes);
+        ctx.lineDashOffset = 0;
         ctx.stroke();
         ctx.setLineDash([]);
       }
@@ -569,6 +580,7 @@ export default function MindMap() {
       ]);
       setSelId(id);
       setIconPick(id);
+      gtag("event", "create_thought", { act: curAct });
     },
     [pan, curAct, hitNode, toC],
   );
@@ -676,6 +688,7 @@ export default function MindMap() {
             setCurAct(next);
             setSelAct(next);
             setSelId(null);
+            gtag("event", "create_act", { act_number: next });
           }}
           style={{
             textAlign: "left",

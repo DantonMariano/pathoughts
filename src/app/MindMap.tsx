@@ -155,7 +155,7 @@ export default function MindMap() {
     ctx.fillRect(0, 0, Wv, Hv);
 
     // Top bar
-    ctx.fillStyle = "rgba(6,5,4,0.7)";
+    ctx.fillStyle = "#060504";
     ctx.fillRect(0, 0, Wv, 68);
     ctx.fillStyle = "#2a2520";
     ctx.fillRect(0, 68, Wv, 1);
@@ -294,6 +294,12 @@ export default function MindMap() {
 
     ctx.restore(); // end zoom
 
+    // Redraw header on top of everything
+    ctx.fillStyle = "#060504";
+    ctx.fillRect(0, 0, Wv, 68);
+    ctx.fillStyle = "#2a2520";
+    ctx.fillRect(0, 68, Wv, 1);
+
     // ── HUD top left
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, "0");
@@ -354,6 +360,13 @@ export default function MindMap() {
   /* ── Mouse ── */
   const onDown = useCallback(
     (e: React.MouseEvent) => {
+      // PEOPLE tab click → redirect
+      const vw = window.innerWidth;
+      const peopleX = vw - 110;
+      if (e.clientY < 68 && Math.abs(e.clientX - peopleX) < 50) {
+        window.open("https://dantonmariano.com", "_blank");
+        return;
+      }
       const hit = hitNode(e.clientX, e.clientY);
       const cp = toC(e.clientX, e.clientY);
       if (e.button === 2) {
@@ -395,6 +408,11 @@ export default function MindMap() {
     (e: React.MouseEvent) => {
       setMouse({ x: e.clientX, y: e.clientY });
       setHovId(hitNode(e.clientX, e.clientY)?.id ?? null);
+      // Cursor for PEOPLE tab
+      const vw = window.innerWidth;
+      const onPeople = e.clientY < 68 && Math.abs(e.clientX - (vw - 110)) < 50;
+      const c = canvasRef.current;
+      if (c) c.style.cursor = onPeople ? "pointer" : "default";
       if (panning) {
         const cp = toC(e.clientX, e.clientY);
         setPan({ x: cp.x - panSt.x, y: cp.y - panSt.y });

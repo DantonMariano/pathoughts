@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Патологик — Mind Map",
+  title: "Pathologic 2 - Mind Map",
   description: "A mind map in the style of Pathologic 2",
 };
 

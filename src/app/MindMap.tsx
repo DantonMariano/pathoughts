@@ -346,8 +346,9 @@ export default function MindMap() {
         ctx.beginPath();
         ctx.arc(nx, ny, r - b.w / 2, 0, Math.PI * 2);
         const circ = Math.PI * 2 * (r - b.w / 2);
-        const seg = circ / 8;
-        const minGap = 10;
+        const numDashes = circ > 200 ? 8 : 6;
+        const seg = circ / numDashes;
+        const minGap = Math.min(10, seg * 0.35);
         // Seed from node id
         let seed = 0;
         for (let i = 0; i < nd.id.length; i++) seed = ((seed << 5) - seed + nd.id.charCodeAt(i)) | 0;
@@ -358,9 +359,9 @@ export default function MindMap() {
         ctx.translate(-nx, -ny);
         // Build dash pattern
         const dashes: number[] = [];
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < numDashes; i++) {
           seed = (seed * 1103515245 + 12345) | 0;
-          const gapExtra = ((seed >>> 16) % 5); // 0–4 extra px
+          const gapExtra = ((seed >>> 16) % (circ > 200 ? 5 : 3));
           const gap = minGap + gapExtra;
           dashes.push(seg - gap, gap);
         }

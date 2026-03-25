@@ -52,6 +52,7 @@ export default function MindMap() {
   const [panSt, setPanSt] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [curAct, setCurAct] = useState(1);
+  const [knownActs, setKnownActs] = useState<number[]>([1]);
   const [editLabel, setEditLabel] = useState<string | null>(null);
   const [iconPick, setIconPick] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -64,6 +65,7 @@ export default function MindMap() {
         const data = JSON.parse(saved);
         if (data.nodes) setNodes(data.nodes);
         if (data.curAct) setCurAct(data.curAct);
+        if (data.knownActs) setKnownActs(data.knownActs);
       }
     } catch {
       /* ignore */
@@ -73,7 +75,7 @@ export default function MindMap() {
   // Save to localStorage on changes
   useEffect(() => {
     try {
-      localStorage.setItem("pathomap", JSON.stringify({ nodes, curAct }));
+      localStorage.setItem("pathomap", JSON.stringify({ nodes, curAct, knownActs }));
     } catch {
       /* ignore */
     }
@@ -85,7 +87,7 @@ export default function MindMap() {
     return () => clearInterval(iv);
   }, []);
 
-  const acts = [...new Set(nodes.map((n) => n.act))].sort();
+  const acts = [...new Set([...nodes.map((n) => n.act), ...knownActs])].sort((a, b) => a - b);
   if (!acts.includes(curAct)) acts.push(curAct);
   acts.sort((a, b) => a - b);
   const vis = nodes.filter((n) => n.act === curAct);
@@ -331,7 +333,16 @@ export default function MindMap() {
     const baseY = 48;
     ctx.font = "bold 34px 'Liberation Serif', Georgia, serif";
     ctx.fillStyle = "#b8b4a8";
-    ctx.fillText(`${hh}:${mm} — Day ${day}`, 60, baseY);
+    const prefix = `${hh}:${mm} — `;
+    ctx.fillText(prefix, 60, baseY);
+    let dx = 60 + ctx.measureText(prefix).width;
+    ctx.fillText("D", dx, baseY);
+    dx += ctx.measureText("D").width;
+    ctx.font = "bold 29px 'Liberation Serif', Georgia, serif";
+    ctx.fillText("AY", dx, baseY);
+    dx += ctx.measureText("AY").width;
+    ctx.font = "bold 34px 'Liberation Serif', Georgia, serif";
+    ctx.fillText(` ${day}`, dx, baseY);
     ctx.restore();
 
     // ── HUD top right tabs
@@ -601,7 +612,11 @@ export default function MindMap() {
           );
         })}
         <button
-          onClick={() => setCurAct(acts.length ? Math.max(...acts) + 1 : 1)}
+          onClick={() => {
+            const next = acts.length ? Math.max(...acts) + 1 : 1;
+            setKnownActs((k) => [...new Set([...k, next])]);
+            setCurAct(next);
+          }}
           style={{
             textAlign: "left",
             fontSize: 14,

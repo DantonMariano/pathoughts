@@ -87,6 +87,12 @@ export default function MindMap() {
     return () => clearInterval(iv);
   }, []);
 
+  // Prune empty acts that aren't current
+  useEffect(() => {
+    const usedActs = new Set(nodes.map((n) => n.act));
+    setKnownActs((k) => k.filter((a) => usedActs.has(a) || a === curAct));
+  }, [curAct, nodes]);
+
   const acts = [...new Set([...nodes.map((n) => n.act), ...knownActs])].sort((a, b) => a - b);
   if (!acts.includes(curAct)) acts.push(curAct);
   acts.sort((a, b) => a - b);
@@ -591,29 +597,49 @@ export default function MindMap() {
         {acts.map((a) => {
           const has = nodes.some((n) => n.act === a);
           return (
-            <button
-              key={a}
-              onClick={() => setCurAct(a)}
-              style={{
-                textAlign: "left",
-                fontSize: 32,
-                fontFamily: "'Noto Sans', sans-serif",
-                fontStretch: "condensed",
-                color: curAct === a ? "#b8b4a8" : "#5a5040",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: "2px 0",
-              }}
-            >
-              {!has && "* "}
-              {`Act ${toRoman(a)}`}
-            </button>
+            <div key={a} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button
+                onClick={() => setCurAct(a)}
+                style={{
+                  textAlign: "left",
+                  fontSize: 32,
+                  fontFamily: "'Noto Sans', sans-serif",
+                  fontStretch: "condensed",
+                  color: curAct === a ? "#b8b4a8" : "#5a5040",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "2px 0",
+                }}
+              >
+                {!has && "* "}
+                {`Act ${toRoman(a)}`}
+              </button>
+              {curAct === a && (
+                <button
+                  onClick={() => {
+                    const nodeCount = nodes.filter((n) => n.act === a).length;
+                    const msg = nodeCount > 0
+                      ? `Delete Act ${toRoman(a)}? All ${nodeCount} node${nodeCount > 1 ? "s" : ""} will be lost.`
+                      : `Delete Act ${toRoman(a)}?`;
+                    if (!confirm(msg)) return;
+                    setNodes((p) => p.filter((n) => n.act !== a));
+                    setKnownActs((k) => k.filter((k2) => k2 !== a));
+                    const remaining = acts.filter((x) => x !== a);
+                    setCurAct(remaining.length ? remaining[remaining.length - 1] : 1);
+                  }}
+                  style={{ fontSize: 11, color: "#a83232", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em" }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           );
         })}
         <button
           onClick={() => {
-            const next = acts.length ? Math.max(...acts) + 1 : 1;
+            let next = curAct + 1;
+            while (acts.includes(next)) next++;
             setKnownActs((k) => [...new Set([...k, next])]);
             setCurAct(next);
           }}

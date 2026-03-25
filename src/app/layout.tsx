@@ -14,6 +14,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <head>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-SWHH0ZWWCX"></script>
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-SWHH0ZWWCX');
+        `}} />
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <link rel="icon" href="/icon.png" type="image/png" sizes="192x192" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

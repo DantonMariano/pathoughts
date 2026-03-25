@@ -1,26 +1,29 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #060504;
+  font-family: 'Noto Sans', Arial, sans-serif;
+  font-stretch: condensed;
+  color: #b8b4a8;
+  user-select: none;
+  cursor: default;
 }
+
+/* Themed scrollbar */
+.themed-scroll::-webkit-scrollbar { width: 6px; }
+.themed-scroll::-webkit-scrollbar-track { background: #0e0c0a; }
+.themed-scroll::-webkit-scrollbar-thumb { background: #3a3528; border-radius: 3px; }
+.themed-scroll::-webkit-scrollbar-thumb:hover { background: #5a5040; }
+.themed-scroll { scrollbar-width: thin; scrollbar-color: #3a3528 #0e0c0a; }
+
+/* Markdown rendered in thoughts */
+.thought-md { font-size: 18px; font-style: italic; color: #b8b4a8; cursor: text; line-height: 1.5; overflow-wrap: break-word; word-break: break-word; }
+.thought-md p { margin: 0.25em 0; }
+.thought-md strong { color: #d0cdc4; font-weight: 700; }
+.thought-md em { color: #b89a3e; }
+.thought-md ul, .thought-md ol { padding-left: 1.2em; margin: 0.25em 0; }
+.thought-md code { background: #1a1816; padding: 1px 4px; font-size: 0.9em; color: #a09080; }
+.thought-md a { color: #a83232; text-decoration: underline; }
+.thought-md h1, .thought-md h2, .thought-md h3 { color: #d0cdc4; margin: 0.3em 0 0.1em; font-size: 1em; }

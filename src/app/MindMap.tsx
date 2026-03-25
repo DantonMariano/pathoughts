@@ -38,10 +38,6 @@ function getImg(name: string): HTMLImageElement | null {
   return img.complete ? img : null;
 }
 
-function stripMd(s: string) {
-  return s.replace(/[#*_`~\[\]()>!|-]/g, "").replace(/\n+/g, " ").trim();
-}
-
 export default function MindMap() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [nodes, setNodes] = useState<MindNode[]>([]);
@@ -108,6 +104,30 @@ export default function MindMap() {
           dy = n.y + pan.y - p.y;
         if (dx * dx + dy * dy <= (SIZE_R[n.size] + 4) ** 2) return n;
       }
+    },
+    [vis, pan, toC],
+  );
+
+  const hitLine = useCallback(
+    (vx: number, vy: number): { from: string; to: string } | null => {
+      const p = toC(vx, vy);
+      const thresh = 6;
+      for (const nd of vis) {
+        const ax = nd.x + pan.x, ay = nd.y + pan.y;
+        for (const tid of nd.connections) {
+          const t = vis.find((n) => n.id === tid);
+          if (!t) continue;
+          const bx = t.x + pan.x, by = t.y + pan.y;
+          const dx = bx - ax, dy = by - ay;
+          const len2 = dx * dx + dy * dy;
+          if (len2 === 0) continue;
+          const t0 = Math.max(0, Math.min(1, ((p.x - ax) * dx + (p.y - ay) * dy) / len2));
+          const px = ax + t0 * dx, py = ay + t0 * dy;
+          const d2 = (p.x - px) ** 2 + (p.y - py) ** 2;
+          if (d2 <= thresh * thresh) return { from: nd.id, to: tid };
+        }
+      }
+      return null;
     },
     [vis, pan, toC],
   );
@@ -382,7 +402,20 @@ export default function MindMap() {
             );
             setConnecting(null);
           } else setConnecting(hit.id);
-        } else setConnecting(null);
+        } else {
+          // Check if right-clicking a connection line to disconnect
+          const line = hitLine(e.clientX, e.clientY);
+          if (line) {
+            setNodes((p) =>
+              p.map((n) =>
+                n.id === line.from
+                  ? { ...n, connections: n.connections.filter((c) => c !== line.to) }
+                  : n,
+              ),
+            );
+          }
+          setConnecting(null);
+        }
         return;
       }
       if (e.button === 1 || (e.button === 0 && e.altKey)) {

@@ -858,7 +858,7 @@ export default function MindMap() {
             padding: "8px 20px",
           }}
         >
-          Right-click target to connect · Right-click empty to cancel
+          Right-click target to connect · Right-click empty to cancel · Right-click on line to delete
         </div>
       )}
     </div>

@@ -26,6 +26,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.cdnfonts.com" crossOrigin="anonymous" />
+        <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wdth,wght@75,400&display=swap" as="style" />
+        <link rel="preload" href="https://fonts.cdnfonts.com/css/liberation-serif" as="style" />
         <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wdth,wght@75,400&display=swap" rel="stylesheet" />
         <link href="https://fonts.cdnfonts.com/css/liberation-serif" rel="stylesheet" />
       </head>

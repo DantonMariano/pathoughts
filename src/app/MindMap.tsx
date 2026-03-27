@@ -21,10 +21,10 @@ interface MindNode {
 
 const SIZE_R = { large: 42, medium: 28, small: 20 };
 const BORDER = {
-  active: { color: "#b0a890", w: 1.5 },
-  resolved: { color: "#504838", w: 1 },
+  active: { color: "#aaa", w: 1.5 },
+  resolved: { color: "#444", w: 1 },
   missed: { color: "#b89a3e", w: 1 },
-  future: { color: "#3a3528", w: 3 },
+  future: { color: "#333", w: 3 },
 };
 
 // Preload icon images
@@ -41,7 +41,7 @@ function getImg(name: string): HTMLImageElement | null {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const gtag = (...args: any[]) => { if (typeof window !== "undefined" && (window as any).gtag) (window as any).gtag(...args); };
 
-export default function MindMap() {
+export default function MindMap({ activeTab = "thoughts", onTabChange }: { activeTab?: string; onTabChange?: (tab: string) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [nodes, setNodes] = useState<MindNode[]>([]);
   const [selId, setSelId] = useState<string | null>(null);
@@ -216,7 +216,7 @@ export default function MindMap() {
       Hv = vh;
 
     // BG
-    ctx.fillStyle = "#060504";
+    ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, Wv, Hv);
 
     // Vignette only (no floor lines)
@@ -230,16 +230,16 @@ export default function MindMap() {
       cy + 30,
       Wv * 0.6,
     );
-    vg.addColorStop(0, "rgba(6,5,4,0)");
-    vg.addColorStop(0.5, "rgba(6,5,4,0.25)");
-    vg.addColorStop(1, "rgba(6,5,4,0.88)");
+    vg.addColorStop(0, "rgba(0,0,0,0)");
+    vg.addColorStop(0.5, "rgba(0,0,0,0.25)");
+    vg.addColorStop(1, "rgba(0,0,0,0.88)");
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, Wv, Hv);
 
     // Top bar
-    ctx.fillStyle = "#060504";
+    ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, Wv, 68);
-    ctx.fillStyle = "#2a2520";
+    ctx.fillStyle = "#1a1a1a";
     ctx.fillRect(0, 68, Wv, 1);
 
     // Apply zoom for world content
@@ -256,7 +256,7 @@ export default function MindMap() {
         const t = vis.find((n) => n.id === tid);
         if (!t) return;
         ctx.save();
-        ctx.strokeStyle = "#706858";
+        ctx.strokeStyle = "#555";
         ctx.globalAlpha = 0.4;
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -272,7 +272,7 @@ export default function MindMap() {
       const src = vis.find((n) => n.id === connecting);
       if (src) {
         ctx.save();
-        ctx.strokeStyle = "#a0907088";
+        ctx.strokeStyle = "#99999988";
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
@@ -330,18 +330,18 @@ export default function MindMap() {
         // Larger bg fill to mask connection lines, then stroke at normal r
         ctx.beginPath();
         ctx.arc(nx, ny, r + 10, 0, Math.PI * 2);
-        ctx.fillStyle = "#060504";
+        ctx.fillStyle = "#000";
         ctx.fill();
       } else {
         ctx.beginPath();
         ctx.arc(nx, ny, r, 0, Math.PI * 2);
-        ctx.fillStyle = "#0e0c0a";
+        ctx.fillStyle = "#0a0a0a";
         ctx.fill();
       }
 
       // Border (only for future nodes — others have borders in their icon images)
       if (nd.state === "future") {
-        ctx.strokeStyle = isHov || isSel ? "#d4d4d4" : b.color;
+        ctx.strokeStyle = isHov || isSel ? "#fff" : b.color;
         ctx.lineWidth = b.w;
         ctx.beginPath();
         ctx.arc(nx, ny, r - b.w / 2, 0, Math.PI * 2);
@@ -396,9 +396,9 @@ export default function MindMap() {
     ctx.restore(); // end zoom
 
     // Redraw header on top of everything
-    ctx.fillStyle = "#060504";
+    ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, Wv, 68);
-    ctx.fillStyle = "#2a2520";
+    ctx.fillStyle = "#1a1a1a";
     ctx.fillRect(0, 68, Wv, 1);
 
     // ── HUD top left
@@ -411,7 +411,7 @@ export default function MindMap() {
     ctx.textAlign = "left";
     const baseY = 48;
     ctx.font = "bold 34px 'Liberation Serif', Georgia, serif";
-    ctx.fillStyle = "#d4d4d4";
+    ctx.fillStyle = "#fff";
     const prefix = `${hh}:${mm} — `;
     ctx.fillText(prefix, 60, baseY);
     let dx = 60 + ctx.measureText(prefix).width;
@@ -431,19 +431,19 @@ export default function MindMap() {
     const tabs = ["TOWN", "THOUGHTS", "THINGS", "PEOPLE"];
     const tabX = [Wv - 480, Wv - 360, Wv - 230, Wv - 110];
     tabs.forEach((t, i) => {
-      const isThoughts = t === "THOUGHTS";
+      const isActive = t === (activeTab || "thoughts").toUpperCase();
       ctx.font = "condensed 22px 'Noto Sans', sans-serif";
-      ctx.fillStyle = isThoughts ? "#d4d4d4" : "#5a5040";
+      ctx.fillStyle = isActive ? "#fff" : "#666";
       ctx.fillText(t, tabX[i], 44);
     });
     ctx.font = "condensed 28px 'Noto Sans', sans-serif";
-    ctx.fillStyle = "#5a5040";
+    ctx.fillStyle = "#666";
     ctx.fillText("‹", Wv - 540, 46);
     ctx.fillText("›", Wv - 40, 46);
     ctx.restore();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vis, pan, zoom, connecting, mouse, hovId, selId, dragging, tick]);
+  }, [vis, pan, zoom, connecting, mouse, hovId, selId, dragging, tick, activeTab]);
 
   useEffect(() => {
     const id = requestAnimationFrame(draw);
@@ -461,7 +461,7 @@ export default function MindMap() {
     if (!c) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      setZoom((z) => Math.min(1.75, Math.max(0.75, z - e.deltaY * 0.001)));
+      setZoom((z) => Math.min(2, Math.max(0.75, z - e.deltaY * 0.001)));
     };
     c.addEventListener("wheel", onWheel, { passive: false });
     return () => c.removeEventListener("wheel", onWheel);
@@ -470,6 +470,25 @@ export default function MindMap() {
   /* ── Mouse ── */
   const onDown = useCallback(
     (e: React.MouseEvent) => {
+      // Tab click detection in header area
+      if (e.clientY < 68) {
+        const vw = window.innerWidth;
+        const tabDefs = [
+          { name: "town", cx: vw - 480 },
+          { name: "thoughts", cx: vw - 360 },
+          { name: "things", cx: vw - 230 },
+          { name: "people", cx: vw - 110 },
+        ];
+        for (const td of tabDefs) {
+          if (Math.abs(e.clientX - td.cx) < 50) {
+            if (td.name === "town") window.open("https://pathologic2map.ru/", "_blank");
+            else if (td.name === "things") window.open("https://pathologic.fandom.com/wiki/Category:Items_(Pathologic_2)", "_blank");
+            else if (onTabChange) onTabChange(td.name);
+            return;
+          }
+        }
+        return;
+      }
       const hit = hitNode(e.clientX, e.clientY);
       const cp = toC(e.clientX, e.clientY);
       if (e.button === 2) {
@@ -518,7 +537,7 @@ export default function MindMap() {
         setIconPick(null);
       }
     },
-    [pan, connecting, hitNode, toC],
+    [pan, connecting, hitNode, toC, onTabChange],
   );
 
   const onMove = useCallback(
@@ -670,7 +689,7 @@ export default function MindMap() {
                 fontSize: 32,
                 fontFamily: "'Noto Sans', sans-serif",
                 fontStretch: "condensed",
-                color: curAct === a ? "#d4d4d4" : "#5a5040",
+                color: curAct === a ? "#938564" : "#5a4a35",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
@@ -695,7 +714,7 @@ export default function MindMap() {
             textAlign: "left",
             fontSize: 14,
             fontStyle: "italic",
-            color: "#3a3528",
+            color: "#333",
             background: "none",
             border: "none",
             cursor: "pointer",
@@ -717,8 +736,8 @@ export default function MindMap() {
               left: sp.x, top,
               transform: `translateX(-50%) scale(${zoom})`,
               transformOrigin: "top center",
-              background: "#060504",
-              border: `${1 / zoom}px solid rgba(212,212,212,0.5)`,
+              background: "#000",
+              border: `${1 / zoom}px solid rgba(255,255,255,0.3)`,
               padding: "12px 18px",
               maxWidth: 400,
               minWidth: 120,
@@ -745,7 +764,7 @@ export default function MindMap() {
                   }}
                   style={{
                     background: "transparent", border: "none", outline: "none",
-                    color: "#d4d4d4", fontSize: 16, fontFamily: "'Noto Sans', sans-serif",
+                    color: "#fff", fontSize: 16, fontFamily: "'Noto Sans', sans-serif",
                     fontStretch: "condensed", caretColor: "#a83232",
                     width: "100%", minHeight: 60, resize: "vertical", lineHeight: 1.5,
                     textAlign: "left",
@@ -760,11 +779,11 @@ export default function MindMap() {
                       setNodes((p) => p.map((n) => n.id === tooltipNode.id ? { ...n, label: val } : n));
                       setEditLabel(null);
                     }}
-                    style={{ fontSize: 11, color: "#d4d4d4", background: "none", border: "1px solid #3a3528", cursor: "pointer", padding: "2px 10px", letterSpacing: "0.05em" }}
+                    style={{ fontSize: 11, color: "#fff", background: "none", border: "1px solid #333", cursor: "pointer", padding: "2px 10px", letterSpacing: "0.05em" }}
                   >SAVE</button>
                   <button
                     onMouseDown={() => setEditLabel(null)}
-                    style={{ fontSize: 11, color: "#5a5040", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em" }}
+                    style={{ fontSize: 11, color: "#666", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em" }}
                   >CANCEL</button>
                 </div>
               </div>
@@ -805,7 +824,7 @@ export default function MindMap() {
               <button
                 onClick={() => cycleSize(sel.id)}
                 style={{
-                  color: "#6a6050",
+                  color: "#777",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
@@ -816,7 +835,7 @@ export default function MindMap() {
               <button
                 onClick={() => setIconPick(iconPick === sel.id ? null : sel.id)}
                 style={{
-                  color: "#6a6050",
+                  color: "#777",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
@@ -833,7 +852,7 @@ export default function MindMap() {
                   )
                 }
                 style={{
-                  color: sel.seen ? "#6a6050" : "#b89a3e",
+                  color: sel.seen ? "#777" : "#b89a3e",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
@@ -875,19 +894,19 @@ export default function MindMap() {
                 }}
                 style={{
                   background: "transparent", border: "none", outline: "none",
-                  color: "#d4d4d4", fontSize: 18, fontFamily: "'Noto Sans', sans-serif",
+                  color: "#fff", fontSize: 18, fontFamily: "'Noto Sans', sans-serif",
                   fontStretch: "condensed", caretColor: "#a83232", width: 300,
                 }}
               />
             ) : (
-              <div style={{ fontSize: 18, color: "#d4d4d4", marginBottom: 8 }}>
+              <div style={{ fontSize: 18, color: "#fff", marginBottom: 8 }}>
                 {actNames[selAct] || `Act ${toRoman(selAct)}`}
               </div>
             )}
             <div className="flex" style={{ gap: 14, fontSize: 11, letterSpacing: "0.08em" }}>
               <button
                 onClick={() => setEditActName(selAct)}
-                style={{ color: "#6a6050", background: "none", border: "none", cursor: "pointer" }}
+                style={{ color: "#777", background: "none", border: "none", cursor: "pointer" }}
               >RENAME</button>
               <button
                 onClick={() => {
@@ -911,7 +930,7 @@ export default function MindMap() {
             </div>
           </div>
         ) : (
-          <div style={{ fontSize: 15, fontStyle: "italic", color: "#3a3528" }}>
+          <div style={{ fontSize: 15, fontStyle: "italic", color: "#333" }}>
             Double-click to create a thought
           </div>
         )}
@@ -925,15 +944,15 @@ export default function MindMap() {
             left: 60,
             bottom: 100,
             maxHeight: "60vh",
-            background: "rgba(10,8,6,0.97)",
-            border: "1px solid #3a3528",
+            background: "rgba(10,10,10,0.97)",
+            border: "1px solid #333",
             padding: "10px",
           }}
         >
           <div
             style={{
               fontSize: 10,
-              color: "#5a5040",
+              color: "#666",
               letterSpacing: "0.1em",
               marginBottom: 8,
             }}
@@ -960,8 +979,8 @@ export default function MindMap() {
                 style={{
                   width: 52,
                   height: 52,
-                  background: sel.icon === name ? "#2a2520" : "#0e0c0a",
-                  border: `1px solid ${sel.icon === name ? "#d4d4d4" : "#2a2520"}`,
+                  background: sel.icon === name ? "#1a1a1a" : "#0a0a0a",
+                  border: `1px solid ${sel.icon === name ? "#fff" : "#1a1a1a"}`,
                   borderRadius: "50%",
                   cursor: "pointer",
                   padding: 4,
@@ -997,8 +1016,8 @@ export default function MindMap() {
             letterSpacing: "0.1em",
             textTransform: "uppercase",
             color: "#a09080",
-            background: "rgba(10,8,6,0.95)",
-            border: "1px solid #3a352844",
+            background: "rgba(10,10,10,0.95)",
+            border: "1px solid #33333344",
             padding: "8px 20px",
           }}
         >
@@ -1007,17 +1026,17 @@ export default function MindMap() {
       )}
       {/* Custom confirm dialog */}
       {confirmDlg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(6,5,4,0.85)" }}>
-          <div style={{ background: "#0e0c0a", border: "1px solid rgba(212,212,212,0.5)", padding: "24px 32px", maxWidth: 360, textAlign: "center" }}>
-            <div style={{ color: "#d4d4d4", fontSize: 16, marginBottom: 20, lineHeight: 1.5 }}>{confirmDlg.msg}</div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.85)" }}>
+          <div style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.3)", padding: "24px 32px", maxWidth: 360, textAlign: "center" }}>
+            <div style={{ color: "#fff", fontSize: 16, marginBottom: 20, lineHeight: 1.5 }}>{confirmDlg.msg}</div>
             <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
               <button
                 onClick={confirmDlg.onOk}
-                style={{ fontSize: 12, color: "#d4d4d4", background: "none", border: "1px solid #3a3528", cursor: "pointer", padding: "4px 20px", letterSpacing: "0.05em" }}
+                style={{ fontSize: 12, color: "#fff", background: "none", border: "1px solid #333", cursor: "pointer", padding: "4px 20px", letterSpacing: "0.05em" }}
               >CONFIRM</button>
               <button
                 onClick={() => setConfirmDlg(null)}
-                style={{ fontSize: 12, color: "#5a5040", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em" }}
+                style={{ fontSize: 12, color: "#666", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.05em" }}
               >CANCEL</button>
             </div>
           </div>

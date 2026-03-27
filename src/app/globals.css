@@ -3,10 +3,10 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { height: 100%; overflow: hidden; }
 body {
-  background: #060504;
+  background: #000;
   font-family: 'Noto Sans', Arial, sans-serif;
   font-stretch: condensed;
-  color: #d4d4d4;
+  color: #fff;
   user-select: none;
   cursor: default;
 }
@@ -18,17 +18,17 @@ button, input, textarea {
 
 /* Themed scrollbar */
 .themed-scroll::-webkit-scrollbar { width: 6px; }
-.themed-scroll::-webkit-scrollbar-track { background: #0e0c0a; }
-.themed-scroll::-webkit-scrollbar-thumb { background: #3a3528; border-radius: 3px; }
-.themed-scroll::-webkit-scrollbar-thumb:hover { background: #5a5040; }
-.themed-scroll { scrollbar-width: thin; scrollbar-color: #3a3528 #0e0c0a; }
+.themed-scroll::-webkit-scrollbar-track { background: #0a0a0a; }
+.themed-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+.themed-scroll::-webkit-scrollbar-thumb:hover { background: #666; }
+.themed-scroll { scrollbar-width: thin; scrollbar-color: #333 #0a0a0a; }
 
 /* Markdown rendered in thoughts */
-.thought-md { font-size: 18px; font-style: italic; color: #d4d4d4; cursor: text; line-height: 1.5; overflow-wrap: break-word; word-break: break-word; }
+.thought-md { font-size: 18px; font-style: italic; color: #fff; cursor: text; line-height: 1.5; overflow-wrap: break-word; word-break: break-word; }
 .thought-md p { margin: 0.25em 0; }
 .thought-md strong { color: #e8e8e8; font-weight: 700; }
 .thought-md em { color: #e0e0e0; }
 .thought-md ul, .thought-md ol { padding-left: 1.2em; margin: 0.25em 0; }
-.thought-md code { background: #1a1816; padding: 1px 4px; font-size: 0.9em; color: #a09080; }
+.thought-md code { background: #111; padding: 1px 4px; font-size: 0.9em; color: #a09080; }
 .thought-md a { color: #a83232; text-decoration: underline; }
 .thought-md h1, .thought-md h2, .thought-md h3 { color: #e8e8e8; margin: 0.3em 0 0.1em; font-size: 1em; }

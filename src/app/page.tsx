@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import MindMap from "./MindMap";
+import People from "./People";
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
+  const [activeTab, setActiveTab] = useState<"thoughts" | "people">("thoughts");
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 900 || "ontouchstart" in window);
@@ -30,13 +32,13 @@ export default function Home() {
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <div style={{
-            background: "rgba(6,5,4,0.92)", border: "1px solid rgba(212,212,212,0.5)",
+            background: "rgba(0,0,0,0.92)", border: "1px solid rgba(255,255,255,0.3)",
             padding: "32px 28px", maxWidth: 320, textAlign: "center",
           }}>
-          <div style={{ color: "#d4d4d4", fontSize: 20, fontFamily: "'Noto Sans', sans-serif", fontStretch: "condensed", marginBottom: 12 }}>
+          <div style={{ color: "#fff", fontSize: 20, fontFamily: "'Noto Sans', sans-serif", fontStretch: "condensed", marginBottom: 12 }}>
             Pathologic 2 — Mind Map
           </div>
-          <div style={{ color: "#6a6050", fontSize: 14, fontFamily: "'Noto Sans', sans-serif", fontStretch: "condensed", lineHeight: 1.6 }}>
+          <div style={{ color: "#777", fontSize: 14, fontFamily: "'Noto Sans', sans-serif", fontStretch: "condensed", lineHeight: 1.6 }}>
             This website doesn&apos;t work on mobile.<br />Please access it via desktop.
           </div>
           </div>
@@ -45,5 +47,10 @@ export default function Home() {
     );
   }
 
-  return <MindMap />;
+  return (
+    <>
+      <MindMap activeTab={activeTab} onTabChange={(t) => setActiveTab(t as "thoughts" | "people")} />
+      <People activeTab={activeTab} onTabChange={(t) => setActiveTab(t as "thoughts" | "people")} />
+    </>
+  );
 }

@@ -142,7 +142,11 @@ export default function People({ activeTab, onTabChange }: { activeTab?: string;
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  useEffect(() => { setData(load()); }, []);
+  useEffect(() => {
+    const d = load();
+    setData(d);
+    if (d.categories.length === 0) setEditing(true);
+  }, []);
   const update = useCallback((fn: (d: PeopleData) => Partial<PeopleData>) => {
     setData(prev => { const next = { ...prev, ...fn(prev) }; save(next); return next; });
   }, []);
